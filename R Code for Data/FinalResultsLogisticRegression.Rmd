@@ -1,0 +1,215 @@
+---
+title: "Logistic Regression 2"
+author: "Santino Luppino"
+date: "11/21/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(quantmod)
+library("e1071")
+library(randomForest)
+library(keras)
+library(nnet)
+```
+
+```{r}
+set.seed(0)
+coins <- c("BTC-USD", "BNB-USD", "ETH-USD", "XRP-USD", "LTC-USD", "DOGE-USD")
+getSymbols(coins, from = "2018-01-01", to = "2021-12-31", src = "yahoo")
+btc_ret = as.numeric(diff(log(`BTC-USD`[,6])))
+bnb_ret = as.numeric(diff(log(`BNB-USD`[,6])))
+eth_ret = as.numeric(diff(log(`ETH-USD`[,6])))
+xrp_ret = as.numeric(diff(log(`XRP-USD`[,6])))
+ltc_ret = as.numeric(diff(log(`LTC-USD`[,6])))
+doge_ret = as.numeric(diff(log(`DOGE-USD`[,6])))
+
+df = data.frame(diff(log(`BTC-USD`[,6])), diff(log(`BNB-USD`[,6])), 
+                diff(log(`ETH-USD`[,6])), diff(log(`XRP-USD`[,6])),
+                diff(log(`LTC-USD`[,6])), diff(log(`DOGE-USD`[,6])))
+colnames(df) <- c("BTC", "BNB", "ETH", "XRP", "LTC")
+head(df); tail(df)
+
+plot(diff(log(`BTC-USD`[,6])), main = "Logarithmic Returns BTC")
+plot(diff(log(`BNB-USD`[,6])), main = "Logarithmic Returns BNB", col = "green")
+plot(diff(log(`ETH-USD`[,6])), main = "Logarithmic Returns ETH", col = "red")
+plot(diff(log(`XRP-USD`[,6])), main = "Logarithmic Returns XRP", col = "blue")
+plot(diff(log(`LTC-USD`[,6])), main = "Logarithmic Returns LTC", col = "yellow")
+plot(diff(log(`DOGE-USD`[,6])), main = "Logarithmic Returns DOGE", col = "purple")
+```
+
+# Logistic Regression for BTC
+```{r}
+r = na.omit(diff(log(`BTC-USD`[,6])))
+r1 = as.numeric(lag(r, k=1)[-(1:5)])
+r2 = as.numeric(lag(r, k=2)[-(1:5)])
+r3 = as.numeric(lag(r, k=3)[-(1:5)])
+r4 = as.numeric(lag(r, k=4)[-(1:5)])
+r5 = as.numeric(lag(r, k=5)[-(1:5)])
+r <- as.numeric(r[-(1:5)])
+train = sample(length(r),0.5*length(r),replace=FALSE)
+m = mean(r)
+s = sd(r)
+dt = 1/365
+sig <- s/sqrt(dt)
+mu <- m/dt + (sig^2)/2
+#The direction for TSLA
+direction_btc = (r > 0)+0
+df_btc = data.frame(direction_btc,r1,r2,r3,r4,r5)
+logistic.reg = multinom(direction_btc ~ . , data=df_btc , subset = train)
+y.logistic.pred = predict(logistic.reg , newdata = df_btc[-train,])
+logistic.acc = mean(y.logistic.pred==direction_btc[-train]) 
+logistic.acc 
+table(y.logistic.pred , direction_btc[-train])
+sd(r[train])
+kurtosis(r[train])
+```
+
+# Logistic Regression for BNB
+```{r}
+r = na.omit(diff(log(`BNB-USD`[,6])))
+r1 = as.numeric(lag(r, k=1)[-(1:5)])
+r2 = as.numeric(lag(r, k=2)[-(1:5)])
+r3 = as.numeric(lag(r, k=3)[-(1:5)])
+r4 = as.numeric(lag(r, k=4)[-(1:5)])
+r5 = as.numeric(lag(r, k=5)[-(1:5)])
+r <- as.numeric(r)[-(1:5)]
+train = sample(length(r),0.5*length(r),replace=FALSE)
+dt = 1/365
+m = mean(r)
+s = sd(r)
+sig <- s/sqrt(dt)
+mu <- m/dt + (sig^2)/2
+#The direction for TSLA
+direction_bnb = (r > 0)+0
+df_bnb = data.frame(direction_btc,r1,r2,r3,r4,r5)
+logistic.reg = multinom(direction_bnb ~ . , data=df_bnb , subset = train)
+y.logistic.pred = predict(logistic.reg , newdata = df_bnb[-train,])
+logistic.acc = mean(y.logistic.pred==direction_bnb[-train]) 
+logistic.acc 
+table(y.logistic.pred , direction_bnb[-train])
+sd(r[train])
+kurtosis(r[train])
+```
+
+# Logistic Regression for ETH
+```{r}
+r = na.omit(diff(log(`ETH-USD`[,6])))
+r1 = as.numeric(lag(r, k=1)[-(1:5)])
+r2 = as.numeric(lag(r, k=2)[-(1:5)])
+r3 = as.numeric(lag(r, k=3)[-(1:5)])
+r4 = as.numeric(lag(r, k=4)[-(1:5)])
+r5 = as.numeric(lag(r, k=5)[-(1:5)])
+r <- as.numeric(r)[-(1:5)]
+train = sample(length(r),0.5*length(r),replace=FALSE)
+dt = 1/365
+m = mean(r)
+s = sd(r)
+sig <- s/sqrt(dt)
+mu <- m/dt + (sig^2)/2
+#The direction for TSLA
+direction_eth = (r > 0)+0
+df_eth = data.frame(direction_eth,r1,r2,r3,r4,r5)
+logistic.reg = multinom(direction_eth ~ . , data=df_eth , subset = train)
+y.logistic.pred = predict(logistic.reg , newdata = df_eth[-train,])
+logistic.acc = mean(y.logistic.pred==direction_eth[-train]) 
+logistic.acc 
+table(y.logistic.pred , direction_eth[-train])
+sd(r[train])
+kurtosis(r[train])
+```
+
+# Logtistic Regression for XRP
+```{r}
+r = na.omit(diff(log(`XRP-USD`[,6])))
+r1 = as.numeric(lag(r, k=1)[-(1:5)])
+r2 = as.numeric(lag(r, k=2)[-(1:5)])
+r3 = as.numeric(lag(r, k=3)[-(1:5)])
+r4 = as.numeric(lag(r, k=4)[-(1:5)])
+r5 = as.numeric(lag(r, k=5)[-(1:5)])
+r <- as.numeric(r)[-(1:5)]
+train = sample(length(r),0.5*length(r),replace=FALSE)
+dt = 1/365
+m = mean(r)
+s = sd(r)
+sig <- s/sqrt(dt)
+mu <- m/dt + (sig^2)/2
+#The direction for TSLA
+direction_xrp = (r > 0)+0
+df_xrp = data.frame(direction_xrp,r1,r2,r3,r4,r5)
+logistic.reg = multinom(direction_xrp ~ . , data=df_xrp , subset = train)
+y.logistic.pred = predict(logistic.reg , newdata = df_xrp[-train,])
+logistic.acc = mean(y.logistic.pred==direction_xrp[-train]) 
+logistic.acc 
+table(y.logistic.pred , direction_xrp[-train])
+sd(r[train])
+kurtosis(r[train])
+```
+
+# Logistic Regression for LTC
+```{r}
+r = na.omit(diff(log(`LTC-USD`[,6])))
+r1 = as.numeric(lag(r, k=1)[-(1:5)])
+r2 = as.numeric(lag(r, k=2)[-(1:5)])
+r3 = as.numeric(lag(r, k=3)[-(1:5)])
+r4 = as.numeric(lag(r, k=4)[-(1:5)])
+r5 = as.numeric(lag(r, k=5)[-(1:5)])
+r <- as.numeric(r)[-(1:5)]
+train = sample(length(r),0.5*length(r),replace=FALSE)
+dt = 1/365
+m = mean(r)
+s = sd(r)
+sig <- s/sqrt(dt)
+mu <- m/dt + (sig^2)/2
+#The direction for TSLA
+direction_ltc = (r > 0)+0
+df_ltc = data.frame(direction_ltc,r1,r2,r3,r4,r5)
+logistic.reg = multinom(direction_ltc ~ . , data=df_ltc , subset = train)
+y.logistic.pred = predict(logistic.reg , newdata = df_ltc[-train,])
+logistic.acc = mean(y.logistic.pred==direction_ltc[-train]) 
+logistic.acc 
+table(y.logistic.pred , direction_ltc[-train])
+sd(r[train])
+kurtosis(r[train])
+```
+
+# Logistic Regression DOGE
+```{r}
+r = na.omit(diff(log(`DOGE-USD`[,6])))
+r1 = as.numeric(lag(r, k=1)[-(1:5)])
+r2 = as.numeric(lag(r, k=2)[-(1:5)])
+r3 = as.numeric(lag(r, k=3)[-(1:5)])
+r4 = as.numeric(lag(r, k=4)[-(1:5)])
+r5 = as.numeric(lag(r, k=5)[-(1:5)])
+r <- as.numeric(r)[-(1:5)]
+train = sample(length(r),0.5*length(r),replace=FALSE)
+dt = 1/365
+m = mean(r)
+s = sd(r)
+sig <- s/sqrt(dt)
+mu <- m/dt + (sig^2)/2
+#The direction for TSLA
+direction_doge = (r > 0)+0
+df_doge = data.frame(direction_doge,r1,r2,r3,r4,r5)
+logistic.reg = multinom(direction_doge ~ . , data=df_doge , subset = train)
+y.logistic.pred = predict(logistic.reg , newdata = df_doge[-train,])
+logistic.acc = mean(y.logistic.pred==direction_doge[-train]) 
+logistic.acc 
+table(y.logistic.pred , direction_doge[-train])
+sd(r[train])
+kurtosis(r[train])
+```
+
+
+
+
+
+
+
+
+
+
+
+
+

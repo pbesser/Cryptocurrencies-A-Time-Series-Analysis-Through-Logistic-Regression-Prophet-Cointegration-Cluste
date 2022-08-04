@@ -1,0 +1,299 @@
+---
+title: "GBM"
+author: "Santino Luppino"
+date: "2/13/2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(quantmod)
+library(PerformanceAnalytics)
+set.seed(0)
+```
+
+```{r}
+coins <- c("BTC-USD", "BNB-USD", "ETH-USD", "XRP-USD", "LTC-USD", "DOGE-USD")
+getSymbols(coins,from = "2017-01-01",to="2021-12-31",src="yahoo")
+prices <- na.omit(merge(`BTC-USD`[,6],`BNB-USD`[,6],`ETH-USD`[,6],`XRP-USD`[,6],`LTC-USD`[,6],
+                        `DOGE-USD`[,6]))
+colnames(prices) <- c("BTC Prices","BNB Price","ETH Price","XRP Price", "LTC Price", "DOGE Price")
+testing_prices <- prices["2021-01-01/2021-12-31"]
+training_prices <- prices["/2020-12-31"]
+head(prices)
+```
+
+```{r}
+returns <- na.omit(merge(diff(log(`BTC-USD`[,6])),diff(log(`BNB-USD`[,6])),diff(log(`ETH-USD`[,6])
+                                                                              ),
+                         diff(log(`XRP-USD`[,6])),diff(log(`LTC-USD`[,6])), diff(log(`DOGE-USD`[,6]))))
+colnames(returns) <- c("BTC Return","BNB Return","ETH Return","XRP Return", "LTC Return",
+                       "DOGE Return")
+testing_return <- returns["2021-01-01/2021-12-31"]
+training_returns <- returns["/2020-12-31"]
+head(returns)
+```
+
+
+# GBM BTC
+
+```{r}
+# Step 1) Calibration
+dt = 1/365
+m = mean(training_returns[,1])
+s = sd(training_returns[,1])
+sig <- s/sqrt(dt)
+mu <- m/dt + (sig^2)/2
+
+# Step 2) Create the GBM Simulation
+N <- 10^5
+days <- length(testing_return[,1]) # number of days to simulate ahead
+S0 <- as.numeric(training_prices["2020-12-31",1]) # last price of SPY
+drift <- mu - (sig^2)/2
+sim_Geo_BM <- function(n) {
+  R_seq <- rnorm(days,drift*dt,sig*sqrt(dt)) # need to simulate returns
+  S <- S0*exp(c(0,cumsum(R_seq))) # take the exp of returns
+  return(S)
+}
+S_mat <- sapply(1:N,sim_Geo_BM)
+S_total <- c()
+for (i in 1:nrow(S_mat)){
+  S_total <- c(S_total,mean(S_mat[i,]))
+}
+
+# Step 3) Show simulated vs actual
+plot(as.numeric(testing_prices[,1]), type = "l", col="red", ylim = c(30000,75000), main = "Actual Price Movements of 
+     BTC verse GBM Simulated Price Movements", xlab="Simulated Days (01/01/2021 to 12/31/2021)", ylab="Price of BTC")
+lines(S_total, col = "blue")
+legend(0, 74000, legend=c("Actual Price Movements", "GBM Simulated Prices"),
+       col=c("red", "blue"), lty=1, cex=0.8,
+       title="Line types", text.font=4, bg='lightblue')
+
+# Step 4) MSE
+S_returns = diff(log(S_total))
+temp_val = as.numeric(testing_return[,1])
+mean_sq <- c()
+for (i in 1:365){
+  mean_sq <- c(mean_sq, (temp_val[i] - S_returns[i])^2)
+}
+(1/365) * sum(mean_sq)
+```
+
+# GBM BNB
+
+```{r}
+# Step 1) Calibration
+dt = 1/365
+m = mean(training_returns[,2])
+s = sd(training_returns[,2])
+sig <- s/sqrt(dt)
+mu <- m/dt + (sig^2)/2
+
+# Step 2) Create the GBM Simulation
+N <- 10^5
+days <- length(testing_return[,2]) # number of days to simulate ahead
+S0 <- as.numeric(training_prices["2020-12-31",2]) # last price of SPY
+drift <- mu - (sig^2)/2
+sim_Geo_BM <- function(n) {
+  R_seq <- rnorm(days,drift*dt,sig*sqrt(dt)) # need to simulate returns
+  S <- S0*exp(c(0,cumsum(R_seq))) # take the exp of returns
+  return(S)
+}
+S_mat <- sapply(1:N,sim_Geo_BM)
+S_total <- c()
+for (i in 1:nrow(S_mat)){
+  S_total <- c(S_total,mean(S_mat[i,]))
+}
+
+# Step 3) Show simulated vs actual
+plot(as.numeric(testing_prices[,2]), type = "l", col="red", ylim = c(0,900), main = "Actual Price Movements of 
+     BNB verse GBM Simulated Price Movements", xlab="Simulated Days (01/01/2021 to 12/31/2021)", ylab="Price of BNB")
+lines(S_total, col = "blue")
+legend(0, 885, legend=c("Actual Price Movements", "GBM Simulated Prices"),
+       col=c("red", "blue"), lty=1, cex=0.8,
+       title="Line types", text.font=4, bg='lightblue')
+
+# Step 4) MSE
+S_returns = diff(log(S_total))
+temp_val = as.numeric(testing_return[,2])
+mean_sq <- c()
+for (i in 1:365){
+  mean_sq <- c(mean_sq, (temp_val[i] - S_returns[i])^2)
+}
+(1/365) * sum(mean_sq)
+```
+
+# GBM ETH
+
+```{r}
+# Step 1) Calibration
+dt = 1/365
+m = mean(training_returns[,3])
+s = sd(training_returns[,3])
+sig <- s/sqrt(dt)
+mu <- m/dt + (sig^2)/2
+
+# Step 2) Create the GBM Simulation
+N <- 10^5
+days <- length(testing_return[,3]) # number of days to simulate ahead
+S0 <- as.numeric(training_prices["2020-12-31",3]) # last price of SPY
+drift <- mu - (sig^2)/2
+sim_Geo_BM <- function(n) {
+  R_seq <- rnorm(days,drift*dt,sig*sqrt(dt)) # need to simulate returns
+  S <- S0*exp(c(0,cumsum(R_seq))) # take the exp of returns
+  return(S)
+}
+S_mat <- sapply(1:N,sim_Geo_BM)
+S_total <- c()
+for (i in 1:nrow(S_mat)){
+  S_total <- c(S_total,mean(S_mat[i,]))
+}
+
+# Step 3) Show simulated vs actual
+plot(as.numeric(testing_prices[,3]), type = "l", col="red", ylim = c(0,5500), main = "Actual Price Movements of 
+     ETH verse GBM Simulated Price Movements", xlab="Simulated Days (01/01/2021 to 12/31/2021)", ylab="Price of ETH")
+lines(S_total, col = "blue")
+legend(0, 5200, legend=c("Actual Price Movements", "GBM Simulated Prices"),
+       col=c("red", "blue"), lty=1, cex=0.8,
+       title="Line types", text.font=4, bg='lightblue')
+
+# Step 4) Compute MSE
+S_returns = diff(log(S_total))
+temp_val = as.numeric(testing_return[,3])
+mean_sq <- c()
+for (i in 1:365){
+  mean_sq <- c(mean_sq, (temp_val[i] - S_returns[i])^2)
+}
+(1/365) * sum(mean_sq)
+```
+
+# GBM XRP
+
+```{r}
+# Step 1) Calibration
+dt = 1/365
+m = mean(training_returns[,4])
+s = sd(training_returns[,4])
+sig <- s/sqrt(dt)
+mu <- m/dt + (sig^2)/2
+
+# Step 2) Create the GBM Simulation
+N <- 10^5
+days <- length(testing_return[,4]) # number of days to simulate ahead
+S0 <- as.numeric(training_prices["2020-12-31",4]) # last price of SPY
+drift <- mu - (sig^2)/2
+sim_Geo_BM <- function(n) {
+  R_seq <- rnorm(days,drift*dt,sig*sqrt(dt)) # need to simulate returns
+  S <- S0*exp(c(0,cumsum(R_seq))) # take the exp of returns
+  return(S)
+}
+S_mat <- sapply(1:N,sim_Geo_BM)
+S_total <- c()
+for (i in 1:nrow(S_mat)){
+  S_total <- c(S_total,mean(S_mat[i,]))
+}
+
+# Step 3) Show simulated vs actual
+plot(as.numeric(testing_prices[,4]), type = "l", col="red",ylim = c(0,3), main = "Actual Price Movements of 
+     XRP verse GBM Simulated Price Movements", xlab="Simulated Days (01/01/2021 to 12/31/2021)", ylab="Price of XRP")
+lines(S_total, col = "blue")
+legend(0, 3, legend=c("Actual Price Movements", "GBM Simulated Prices"),
+       col=c("red", "blue"), lty=1, cex=0.8,
+       title="Line types", text.font=4, bg='lightblue')
+
+# Step 4) MSE
+S_returns = diff(log(S_total))
+temp_val = as.numeric(testing_return[,4])
+mean_sq <- c()
+for (i in 1:365){
+  mean_sq <- c(mean_sq, (temp_val[i] - S_returns[i])^2)
+}
+(1/365) * sum(mean_sq)
+```
+
+# LTC GBM
+
+```{r}
+dt = 1/365
+m = mean(training_returns[,5])
+s = sd(training_returns[,5])
+sig <- s/sqrt(dt)
+mu <- m/dt + (sig^2)/2
+
+# Step 2) Create the GBM Simulation
+N <- 10^5
+days <- length(testing_return[,5]) # number of days to simulate ahead
+S0 <- as.numeric(training_prices["2020-12-31",5]) # last price of SPY
+drift <- mu - (sig^2)/2
+sim_Geo_BM <- function(n) {
+  R_seq <- rnorm(days,drift*dt,sig*sqrt(dt)) # need to simulate returns
+  S <- S0*exp(c(0,cumsum(R_seq))) # take the exp of returns
+  return(S)
+}
+S_mat <- sapply(1:N,sim_Geo_BM)
+S_total <- c()
+for (i in 1:nrow(S_mat)){
+  S_total <- c(S_total,mean(S_mat[i,]))
+}
+
+# Step 3) Show simulated vs actual
+plot(as.numeric(testing_prices[,5]), type = "l", col="red",ylim = c(0,500), main = "Actual Price Movements of 
+     LTC verse GBM Simulated Price Movements", xlab="Simulated Days (01/01/2021 to 12/31/2021)", ylab="Price of LTC")
+lines(S_total, col = "blue")
+legend(0, 500, legend=c("Actual Price Movements", "GBM Simulated Prices"),
+       col=c("red", "blue"), lty=1, cex=0.8,
+       title="Line types", text.font=4, bg='lightblue')
+
+# Step 4) MSE
+S_returns = diff(log(S_total))
+temp_val = as.numeric(testing_return[,5])
+mean_sq <- c()
+for (i in 1:365){
+  mean_sq <- c(mean_sq, (temp_val[i] - S_returns[i])^2)
+}
+(1/365) * sum(mean_sq)
+```
+
+# DOGE GBM
+
+```{r}
+dt = 1/365
+m = mean(training_returns[,6])
+s = sd(training_returns[,6])
+sig <- s/sqrt(dt)
+mu <- m/dt + (sig^2)/2
+
+# Step 2) Create the GBM Simulation
+N <- 10^5
+days <- length(testing_return[,6]) # number of days to simulate ahead
+S0 <- as.numeric(training_prices["2020-12-31",6]) # last price of SPY
+drift <- mu - (sig^2)/2
+sim_Geo_BM <- function(n) {
+  R_seq <- rnorm(days,drift*dt,sig*sqrt(dt)) # need to simulate returns
+  S <- S0*exp(c(0,cumsum(R_seq))) # take the exp of returns
+  return(S)
+}
+S_mat <- sapply(1:N,sim_Geo_BM)
+S_total <- c()
+for (i in 1:nrow(S_mat)){
+  S_total <- c(S_total,mean(S_mat[i,]))
+}
+
+# Step 3) Show simulated vs actual
+plot(as.numeric(testing_prices[,6]), type = "l", col="red",ylim = c(0,1), main = "Actual Price Movements of 
+     DOGE verse GBM Simulated Price Movements", xlab="Simulated Days (01/01/2021 to 12/31/2021)", ylab="Price of DOGE")
+lines(S_total, col = "blue")
+legend(0, 1, legend=c("Actual Price Movements", "GBM Simulated Prices"),
+       col=c("red", "blue"), lty=1, cex=0.8,
+       title="Line types", text.font=4, bg='lightblue')
+
+# Step 4) MSE
+S_returns = diff(log(S_total))
+temp_val = as.numeric(testing_return[,6])
+mean_sq <- c()
+for (i in 1:365){
+  mean_sq <- c(mean_sq, (temp_val[i] - S_returns[i])^2)
+}
+(1/365) * sum(mean_sq)
+```
+
